@@ -1,0 +1,56 @@
+---
+title: "Introduction and EDA"
+format: html
+editor: visual
+---
+
+## Introduction
+
+## Imports
+
+```{r}
+library(readr)
+library(dplyr)
+```
+
+```{r}
+diabetes_raw <- read_csv("./data/diabetes_binary_health_indicators_BRFSS2015.csv")
+```
+
+## Setting up the Data
+
+I'd like to focus on lifestyle and demographic inputs (essentially asking whether I can predict diabetes without the medical markers), so we'll select and set up the following variables with better types or transformations where necessary.We also include BMI since it's the only numerical predictor and will make our analysis more interesting.
+
+-   BMI
+
+-   Smoker
+
+-   PhysActivity
+
+-   Fruits
+
+-   Veggies
+
+-   HvyAlcoholConsump
+
+-   Education
+
+-   Income
+
+```{r}
+spec(diabetes_raw)
+
+predictors <- c("BMI", "Smoker", "PhysActivity", "Fruits", "Veggies", "HvyAlcoholConsump", "Education", "Income")
+
+diabetes_raw <- diabetes_raw |> 
+  select(all_of(predictors))
+
+# no missing values, so we'll continue
+diabetes_raw |>
+  is.na() |>
+  colSums()
+
+diabetes_tbl <- diabetes_raw |> 
+  mutate(BMI = as.numeric(BMI)) |> 
+  mutate(across(all_of(c("Smoker", "PhysActivity", "Fruits", "Veggies", "HvyAlcoholConsump"))), factor(labels = c("No", "Yes"))) 
+```
