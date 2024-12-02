@@ -11,6 +11,8 @@ editor: visual
 ```{r}
 library(readr)
 library(dplyr)
+library(purrr)
+library(ggplot2)
 ```
 
 ```{r}
@@ -43,7 +45,7 @@ spec(diabetes_raw)
 predictors <- c("BMI", "Smoker", "PhysActivity", "Fruits", "Veggies", "HvyAlcoholConsump", "Education", "Income")
 
 diabetes_raw <- diabetes_raw |> 
-  select(all_of(predictors))
+  select(all_of(c("Diabetes_binary", predictors)))
 
 # no missing values, so we'll continue
 diabetes_raw |>
@@ -52,5 +54,109 @@ diabetes_raw |>
 
 diabetes_tbl <- diabetes_raw |> 
   mutate(BMI = as.numeric(BMI)) |> 
-  mutate(across(all_of(c("Smoker", "PhysActivity", "Fruits", "Veggies", "HvyAlcoholConsump"))), factor(labels = c("No", "Yes"))) 
+  mutate(across(all_of(c("Diabetes_binary", "Smoker", "PhysActivity", "Fruits", "Veggies", "HvyAlcoholConsump")), ~factor(.x, levels = c(0, 1), labels = c("No", "Yes")))) |> 
+  mutate(Education = factor(Education, 
+                            levels = c(seq(1:6)), 
+                            labels = c(
+                              "Never attended school or only kindergarten", 
+                              "Grades 1 through 8 (Elementary)",
+                              "Grades 9 through 11 (Some high school)",
+                              "Grade 12 or GED (High school graduate)",
+                              "College 1 year to 3 years (Some college or technical school)",
+                              "College 4 years or more (College graduate)"))) |> 
+  mutate(Income = factor(Income,
+                         levels = c(1:8),
+                         labels = c(
+                           "Less than $10,000",
+                           "$10,000 to less than $15,000",
+                           "$15,000 to less than $20,000",
+                           "$20,000 to less than $25,000",
+                           "$25,000 to less than $35,000",
+                           "$35,000 to less than $50,000",
+                           "$50,000 to less than $75,000",
+                           "$75,000 or more"
+                         ))) |> 
+  rename("DiabetesOutcome" = "Diabetes_binary")
 ```
+
+## EDA
+
+Let's check one-way counts and mean/sd of BMI.
+
+```{r}
+map(names(diabetes_tbl)[!(names(diabetes_tbl) %in% c("BMI"))], \(column_name) table(diabetes_tbl[column_name]))
+
+mean(diabetes_tbl$BMI)
+sd(diabetes_tbl$BMI)
+```
+
+Let's look for a couple of patterns, too. We'll get a sense of more ways this can fit together when we run models, but let's create a few two-way tables and look at how BMI fits into the picture.
+
+#### Voluntary activities:
+
+```{r}
+temp <- table(diabetes_tbl$DiabetesOutcome, diabetes_tbl$Smoker)
+names(dimnames(temp)) <- c("Diabetes", "Smoker")
+print(temp)
+
+temp <- table(diabetes_tbl$DiabetesOutcome, diabetes_tbl$HvyAlcoholConsump)
+names(dimnames(temp)) <- c("Diabetes", "Heavy Alc. Use")
+print(temp)
+
+ggplot(diabetes_tbl, aes(x = BMI)) +
+  geom_histogram(aes(fill = Smoker), alpha = .5, bins = 45)
+
+ggplot(diabetes_tbl, aes(x = BMI)) +
+  geom_histogram(aes(fill = HvyAlcoholConsump), alpha = .5, bins = 45)
+```
+
+Diabetes is notably more prevalent in this data among smokers than nonsmokers.
+
+#### Food Intake:
+
+```{r}
+temp <- table(diabetes_tbl$DiabetesOutcome, diabetes_tbl$Fruits)
+names(dimnames(temp)) <- c("Diabetes", "Fruits")
+print(temp)
+
+temp <- table(diabetes_tbl$DiabetesOutcome, diabetes_tbl$Veggies)
+names(dimnames(temp)) <- c("Diabetes", "Veggies")
+print(temp)
+
+ggplot(diabetes_tbl, aes(x = BMI)) +
+  geom_histogram(aes(fill = Fruits), alpha = .5, bins = 45)
+
+ggplot(diabetes_tbl, aes(x = BMI)) +
+  geom_histogram(aes(fill = Veggies), alpha = .5, bins = 45)
+```
+
+It looks like many people eat at least one serving of fruits and vegetables daily, which could make this a less powerful group of predictors.
+
+#### Demographics
+
+```{r}
+temp <- table(diabetes_tbl$DiabetesOutcome, diabetes_tbl$Education)
+names(dimnames(temp)) <- c("Diabetes", "Education")
+print(temp)
+
+temp <- table(diabetes_tbl$DiabetesOutcome, diabetes_tbl$Income)
+names(dimnames(temp)) <- c("Diabetes", "Income")
+print(temp)
+
+ggplot(diabetes_tbl, aes(x = BMI)) +
+  geom_histogram(aes(fill = Education), alpha = .5, bins = 20)
+
+ggplot(diabetes_tbl, aes(x = BMI)) +
+  geom_histogram(aes(fill = Income), alpha = .5, bins = 20)
+```
+
+It's a bit harder to see patterns with more levels of each variable, but it does look like there is some impact between income level and diabetes in particular.
+
+On the whole, there hasn't been a lot of appreciable difference in BMI histogram shape between levels of each variable. We'll do one last look at diabetes prevalence over a BMI histogram.
+
+```{r}
+ggplot(diabetes_tbl, aes(x = BMI)) +
+  geom_histogram(aes(fill = DiabetesOutcome), alpha = .5, bins = 35)
+```
+
+It appears the "Yes" histogram could be slightly right-shifted compared to the "No," but that also could just be us reinforcing an expectation. Let's model to see what factors in most.

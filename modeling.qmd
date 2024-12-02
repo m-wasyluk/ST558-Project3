@@ -1,0 +1,41 @@
+---
+title: "Modeling"
+format: html
+editor: visual
+---
+
+## Introduction
+
+## Imports and Full Recipe
+
+```{r}
+source("./Scripts/data_load.R")
+library(tidymodels)
+```
+```{r}
+set.seed(558)
+
+diabetes_split <- initial_split(diabetes_tbl, prop = .7)
+diabetes_cv_folds <- vfold_cv(training(diabetes_split), 5)
+
+# we'll standardize BMI and dummy everything else
+
+diabetes_recipe <- recipe(DiabetesOutcome ~ ., data = training(diabetes_split))
+```
+
+## Classification Tree
+
+A classification tree is a model that produces a prediction for each path through a tree of decisions based on predictor variable values. The number of decision points can be chosen as a model parameter. Here, for example, the model could split on whether the individual is a smoker, and all outputs will be either "Yes" or "No" to represent DiabetesOutput.
+
+```{r}
+ctree_spec <- decision_tree(tree_depth = tune(), min_n = tune(), cost_complexity = tune()) |> 
+  set_engine("rpart") |> 
+  set_mode("classification")
+
+ctree_wf <- workflow() |> 
+  add_recipe(diabetes_recipe) |> 
+  add_model(ctree_spec)
+
+
+```
+
