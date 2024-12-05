@@ -43,4 +43,54 @@ ctree_grid <- grid_regular(parameters(ctree_spec), levels = 5)
 
 ctree_cv_run <- ctree_wf |> 
   tune_grid(resamples = diabetes_cv_folds, grid = ctree_grid, metrics = metric_set(mn_log_loss))
+
+ctree_best_params <- ctree_cv_run |> 
+  select_best(metric = "mn_log_loss")
+
+saveRDS(ctree_cv_run, file = "./Saved Objects/ctree_cv_run.RDS")
 ```
+
+## Random Forest
+
+```{r}
+rf_spec <- rand_forest(mtry = tune()) |>
+set_engine("ranger",importance = "impurity") |>
+set_mode("classification")
+
+rf_wf <- workflow() |> 
+  add_recipe(diabetes_recipe) |> 
+  add_model(rf_spec)
+
+rf_cv_run <- rf_wf |> 
+  tune_grid(resamples = diabetes_cv_folds, grid = 5, metrics = metric_set(mn_log_loss))
+
+rf_best_params <- rf_cv_run |> 
+  select_best(metric = "mn_log_loss")
+
+saveRDS(rf_cv_run, file = "./Saved Objects/rf_cv_run.RDS")
+```
+
+## Comparison
+
+```{r}
+ctree_wf |> 
+  finalize_workflow(ctree_best_params) |> 
+  last_fit(diabetes_split, metrics = metric_set(mn_log_loss)) |> 
+  collect_metrics()
+
+rf_wf |> 
+  finalize_workflow(rf_best_params) |> 
+  last_fit(diabetes_split, metrics = metric_set(mn_log_loss)) |> 
+  collect_metrics()
+```
+
+Going purely by minimizing log-loss, the random forest performs slightly better.
+
+```{r}
+rf_best_fit <- rf_wf |> 
+  finalize_workflow(rf_best_params) |> 
+  fit(training(diabetes_split))
+
+saveRDS(rf_best_fit, file="./Saved Objects/rf_best_wf.RDS")
+```
+
