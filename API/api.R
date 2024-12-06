@@ -1,18 +1,11 @@
-#
-# This is a Plumber API. You can run the API by clicking
-# the 'Run API' button above.
-#
-# Find out more about building APIs with Plumber here:
-#
-#    https://www.rplumber.io/
-#
-
 library(plumber)
+library(tidymodels)
 
 rf_best_wf <- readRDS("../Saved Objects/rf_best_wf.RDS")
-#preds <- rf_best_fit |> predict(diabetes_tbl)
+#preds <- rf_best_wf |> predict(diabetes_tbl)
 #saveRDS(preds, file = "./Saved Objects/preds.RDS")
 preds <- readRDS("../Saved Objects/preds.RDS")
+diabetes_tbl <- readRDS("../Saved Objects/diabetes_tbl.RDS")
 
 #* @apiTitle Diabetes Model API
 #* @apiDescription This API returns predictions and information about a random forest model used to predict diabetes diagnosis.
@@ -34,7 +27,7 @@ function() {
 #* @get /pred
 function(BMI = 28.38, Smoker = "No", PhysActivity = "Yes", Fruits = "Yes", Veggies = "Yes", HvyAlcoholConsump = "No", Education = "College 4 years or more (College graduate)", Income = "$75,000 or more") {
   rf_best_wf |> 
-    predict(data.frame(BMI = BMI, Smoker = Smoker, PhysActivity = PhysActivity, Fruits = Fruits, Veggies = Veggies, HvyAlcoholConsump = HvyAlcoholConsump, Education = Education, Income = Income), type = "class")
+    predict(data.frame(BMI = as.numeric(BMI), Smoker = Smoker, PhysActivity = PhysActivity, Fruits = Fruits, Veggies = Veggies, HvyAlcoholConsump = HvyAlcoholConsump, Education = Education, Income = Income), type = "class")
 }
 
 test_pred = function(BMI = 28.38, Smoker = "No", PhysActivity = "Yes", Fruits = "Yes", Veggies = "Yes", HvyAlcoholConsump = "No", Education = "College 4 years or more (College graduate)", Income = "$75,000 or more") {
@@ -44,4 +37,4 @@ test_pred = function(BMI = 28.38, Smoker = "No", PhysActivity = "Yes", Fruits = 
 
 test_pred()
 test_pred(BMI = 14)
-rf_best_fit |> predict(data.frame(BMI = 50, Smoker = "Yes", PhysActivity = "No", Fruits = "No", Veggies = "No", HvyAlcoholConsump = "Yes", Education = "Grades 9 through 11 (Some high school)", Income = "$15,000 to less than $20,000"))
+test_pred(BMI = 50, Smoker = "Yes", PhysActivity = "No", Fruits = "No", Veggies = "No", HvyAlcoholConsump = "Yes", Education = "Grades 9 through 11 (Some high school)", Income = "$15,000 to less than $20,000")

@@ -42,3 +42,5 @@ diabetes_tbl <- diabetes_raw |>
                            "$75,000 or more"
                          ))) |> 
   rename("DiabetesOutcome" = "Diabetes_binary")
+
+#saveRDS(diabetes_tbl, file = "./Saved Objects/diabetes_tbl.RDS")
