@@ -6,7 +6,7 @@ editor: visual
 
 ## Introduction
 
-## Imports and Full Recipe
+### Imports and Full Recipe
 
 ```{r}
 source("./Scripts/data_load.R")
@@ -28,7 +28,7 @@ diabetes_recipe <- recipe(DiabetesOutcome ~ ., data = training(diabetes_split)) 
 
 ## Classification Tree
 
-A classification tree is a model that produces a prediction for each path through a tree of decisions based on predictor variable values. The number of decision points can be chosen as a model parameter. Here, for example, the model could split on whether the individual is a smoker, and all outputs will be either "Yes" or "No" to represent DiabetesOutput.
+A classification tree is a model that produces a prediction for each path through a tree of decisions based on predictor variable values. The number of minimum decision points, tree depth, and cost complexity can be chosen as hyperparameters that guide or constrain training. Here, for example, the model could split on whether the individual is a smoker, and all outputs will be either "Yes" or "No" to represent DiabetesOutput.
 
 ```{r}
 ctree_spec <- decision_tree(tree_depth = tune(), min_n = 20, cost_complexity = tune()) |> 
@@ -41,16 +41,20 @@ ctree_wf <- workflow() |>
 
 ctree_grid <- grid_regular(parameters(ctree_spec), levels = 5)
 
-ctree_cv_run <- ctree_wf |> 
-  tune_grid(resamples = diabetes_cv_folds, grid = ctree_grid, metrics = metric_set(mn_log_loss))
+# ctree_cv_run <- ctree_wf |> 
+#   tune_grid(resamples = diabetes_cv_folds, grid = ctree_grid, metrics = metric_set(mn_log_loss))
 
-ctree_best_params <- ctree_cv_run |> 
+ctree_cv_run <-  readRDS("./Saved Objects/ctree_cv_run.RDS")
+
+ctree_best_params <- ctree_cv_run |>
   select_best(metric = "mn_log_loss")
 
-saveRDS(ctree_cv_run, file = "./Saved Objects/ctree_cv_run.RDS")
+# saveRDS(ctree_cv_run, file = "./Saved Objects/ctree_cv_run.RDS")
 ```
 
 ## Random Forest
+
+A random forest is a collection of classification trees. It uses bootstrapping with a subset of available predictors, so each tree in a random forest can potentially look very different from the rest. Once each tree is generated on a bootstrap set with its subset of predictors, majority vote is a common way to make predictions (where the most common prediction among trees is the result). Random forests can reduce variance in parameters and outcomes compared to a single tree.
 
 ```{r}
 rf_spec <- rand_forest(mtry = tune()) |>
@@ -61,13 +65,15 @@ rf_wf <- workflow() |>
   add_recipe(diabetes_recipe) |> 
   add_model(rf_spec)
 
-rf_cv_run <- rf_wf |> 
-  tune_grid(resamples = diabetes_cv_folds, grid = 5, metrics = metric_set(mn_log_loss))
+# rf_cv_run <- rf_wf |> 
+#   tune_grid(resamples = diabetes_cv_folds, grid = 5, metrics = metric_set(mn_log_loss))
+
+rf_cv_run <- readRDS("./Saved Objects/rf_cv_run.RDS")
 
 rf_best_params <- rf_cv_run |> 
   select_best(metric = "mn_log_loss")
 
-saveRDS(rf_cv_run, file = "./Saved Objects/rf_cv_run.RDS")
+#saveRDS(rf_cv_run, file = "./Saved Objects/rf_cv_run.RDS")
 ```
 
 ## Comparison
@@ -93,4 +99,3 @@ rf_best_fit <- rf_wf |>
 
 saveRDS(rf_best_fit, file="./Saved Objects/rf_best_wf.RDS")
 ```
-

@@ -6,7 +6,9 @@ editor: visual
 
 ## Introduction
 
-## Imports
+This data, from Alex Teboul's cleaned BRFSS 2015 survey data on Kaggle, includes a handful of lifestyle, health, and demographic data points, almost all of which are categorical. We'll use this set to train models to predict diabetes diagnosis.
+
+### Imports
 
 ```{r}
 library(readr)
@@ -19,7 +21,7 @@ library(ggplot2)
 diabetes_raw <- read_csv("./data/diabetes_binary_health_indicators_BRFSS2015.csv")
 ```
 
-## Setting up the Data
+### Setting up the Data
 
 I'd like to focus on lifestyle and demographic inputs (essentially asking whether I can predict diabetes without the medical markers), so we'll select and set up the following variables with better types or transformations where necessary.We also include BMI since it's the only numerical predictor and will make our analysis more interesting.
 
@@ -160,3 +162,5 @@ ggplot(diabetes_tbl, aes(x = BMI)) +
 ```
 
 It appears the "Yes" histogram could be slightly right-shifted compared to the "No," but that also could just be us reinforcing an expectation. Let's model to see what factors in most.
+
+[Go to model page](modeling.html)
